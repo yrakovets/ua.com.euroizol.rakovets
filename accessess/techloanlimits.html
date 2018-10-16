@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<!-- @author Rakovets Yurii <rakovets@mzol.ua>
+    @ticket{21809}
+    @brief Лимиты по Тех.кредиту по менеджерам
+-->
+<html lang="en">
+<head>
+
+    <!-- The jQuery library is a prerequisite for all jqSuite products  <script type="text/ecmascript" src="../wdelo30/js/jqGrid/js/jquery-1.11.0.min.js" charset="UTF-8"></script> -->
+    <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery-1.11.0.min.js"></script>
+    <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery.plugin.min.js"></script>
+    <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery.datepick.js"></script>
+    <link rel="stylesheet" href="../../wdelo30/js/jqGrid/css/flora.datepick.css">
+    <script type="text/javascript" src="../../wdelo30/js/jqGrid/js/jquery.datepick-ru.js"></script>
+
+    <!-- This is the Javascript file of jqGrid -->
+    <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/src/jquery.jqGrid.js"></script>
+    <!-- This is the localization file of the grid controlling messages, labels, etc.
+    We support more than 40 localizations -->
+
+    <script type="text/javascript" language="javascript" src="../../wdelo30/js/jqGrid/js/i18n/grid.locale-ru1.js"></script>
+    <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>
+    <!-- The link to the CSS that the grid needs -->
+    <link rel="stylesheet" type="text/css" media="screen" href="../../wdelo30/js/jqGrid/css/ui.jqgrid.css" />
+    <!-- A link to a jQuery UI ThemeRoller theme, more than 22 built-in and many more custom -->
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css">
+    <!-- The link to the CSS that the grid needs -->
+    <link rel="stylesheet" type="text/css" media="screen" href="../../wdelo30/js/jqGrid/css/ui.jqgrid-bootstrap.css" />
+    <script>
+        $.jgrid.defaults.width = 780;
+        $.jgrid.defaults.styleUI = 'Bootstrap';
+    </script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+    <title>Лимиты</title>
+</head>
+<body>
+<div>
+    <table id="jqGrid"></table>
+    <div id="jqGridPager"></div>
+
+</div>
+
+<div>
+    Отображаются общие и персональные лимиты по тех.кредиту. Сумма долга - в евро, по заказам с даты год назад. продажи - сумма оплат в евро по заказам с даты год назад.
+    <br>Если у менеджера не установлен персональный лимит, для него действует общий.
+    <br>Отображаются те люди, кому есть право ставить задачи.
+</div>
+
+<script type="text/javascript">
+
+    var ei_w = $(window).width() - 5;
+    var ei_h = $(window).height()/3*2;
+
+    $(document).ready(function () {
+        $.jgrid.styleUI.Bootstrap.base.rowTable = "table table-bordered table-striped";
+
+
+        function formatValue(cellValue, options, rowObject, tp){
+            let link;
+            if (rowObject['VALID']) {
+                link = '<a href="#" onclick="ShowChildWindow(\'../umolch/umuser.php?EDITID=' + rowObject['VALID'] + '&VARID=100102&NEEDCLOSE=YES\')">' + cellValue + '</a>('+
+                    '<a href="#" onclick="DelItem('+ rowObject['VALID'] +',' + rowObject['USERID'] + ')">x</a>)';
+            } else {
+                link = '<a href="#" onclick="ShowChildWindow(\'../umolch/umuser.php?EDITID=&VARID=100102&POSTER=Adding&USERID=' + rowObject['USERID'] + '&NEEDCLOSE=YES\')">+</a>';
+            }
+            return link;
+        }
+
+        $("#jqGrid").jqGrid({
+            //url: ((window.location.protocol) + '//dp.euroizol.com/wdelo30/organizer/ec_peregovorlist.php'),// + getFilters()),
+            url: ('../accessess/techloanlimits.php?'),
+            datatype: "json",
+            colModel: [
+                {
+                    label: 'ID менеджера',
+                    name: 'USERID',
+                    width: 50,
+                    /*formatter: linkedID,*/
+                    sorttype: 'int'
+                },
+                {
+                    label: 'Менеджер',
+                    name: 'MANAGERNAME',
+                    width: 100,
+                    sorttype: 'text'
+                },
+                {
+                    label: 'ID значения',
+                    name: 'VALID',
+                    width: 50,
+                    sorttype: 'int',
+                    hidden: true
+                },
+                {
+                    label: 'Персонально установленный лимит',
+                    name: 'PERSONALLIMIT',
+                    width: 50,
+                    formatter: formatValue,
+                    sorttype: 'int'
+
+                },
+                {
+                    label: 'Лимит для всех',
+                    name: 'GENERALLIMIT',
+                    width: 50,
+                    sorttype: 'int'
+                },
+                {
+                    label: 'Долг на сейчас',
+                    name: 'Z_DEBT',
+                    width: 50,
+                    sorttype: 'int'
+                },
+                {
+                    label: 'Продажи за год',
+                    name: 'Z_SELL',
+                    width: 50,
+                    sorttype: 'int'
+                }
+            ],
+
+            loadonce: true,
+            footerrow: false,
+            colMenu: true,
+            multiSort: false,
+            hoverrows: true,
+            userDataOnFooter: false, // use the userData parameter of the JSON response to display data on footer
+            width: (ei_w - 5),
+            height: (ei_h - 5),
+            caption: "<b>Лимиты по заказам с типом Технический кредит</b>",
+            viewrecords: true, // show the current page, data rang and total records on the toolbar
+            pager: "#jqGridPager",
+            rowNum: 1500
+        });
+
+
+        $('#jqGrid').navGrid('#jqGridPager',
+            {
+                edit: false,
+                add: false,
+                del: false,
+                search: false,
+                refresh: true,
+                view: false,
+                position: "left",
+                cloneToTop: false});
+
+        // add first custom button
+        $('#jqGrid').navButtonAdd('#jqGridPager',
+            {
+                title: "Export to Excel",
+                caption: "Выгрузить в  Excel",
+                position: "last",
+                maxlength: 200,
+                onClickButton: exportxls
+            });
+
+        function exportxls() {
+            $("#jqGrid").jqGrid("exportToExcel", {
+                includeLabels: true,
+                includeGroupHeader: false,
+                includeFooter: true,
+                fileName: "ec_peregovorlist.xlsx",
+                maxlength: 40 // maxlength for visible string data
+            });
+        }
+
+
+        $('#jqGrid').jqGrid('filterToolbar', {
+            // JSON stringify all data from search, including search toolbar operators
+            stringResult: true,
+            // instuct the grid toolbar to show the search options
+            searchOperators: true
+        });
+        $(".ui-jqgrid-sortable").css('white-space', 'normal').css('height', 'auto');
+    });
+    function ShowChildWindow(link)
+    {
+        var w = 800;
+        var h = 600;
+        var ListKarta  = window.open(link, "TechLimitCard","width="+w+",height="+h+",,top=100,left=100,scrollbars=yes,resizable=yes");
+        ListKarta.opener = self;
+        //$(ListKarta).on('beforeunload',function (){opener.f_update();return true;});
+    }
+    function DelItem(editid, userid) {
+        var ListKarta  = window.open("delusrumolch.php?EDITID=" + editid + "&USERID=" + userid + "&VARID=TIP_ZNACH_TECHCREDITLIMIT", "","width=800,height=600,,top=100,left=100,scrollbars=yes,resizable=yes");
+        ListKarta.close();
+        DoPost("",0);
+    }
+
+    function DoPost(tip, n) {
+
+        $("#jqGrid").jqGrid('clearGridData');  // Очищаем данные
+        //$("#jqGrid").jqGrid('groupingGroupBy', "FILIAL_NAZ");//Если есть группировки то нужно так иначе беда
+
+        $("#jqGrid").
+        setGridParam(
+            {
+                // mtype: "GET",
+                datatype: "json",
+                url: ('../accessess/techloanlimits.php?')
+            }).trigger("reloadGrid", [{ loadonce: true,page: 1}]);
+    }
+</script>
+
+
+</body>
+</html>
