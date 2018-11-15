@@ -1,0 +1,319 @@
+﻿<!DOCTYPE html>
+<!--@author Rakovets Yurii <rakovets@mzol.ua>
+    @ticket{}
+    @brief Список Лидов
+     -->
+<html lang="en">
+    <head> 
+
+        <!-- The jQuery library is a prerequisite for all jqSuite products  <script type="text/ecmascript" src="../wdelo30/js/jqGrid/js/jquery-1.11.0.min.js" charset="UTF-8"></script> -->
+        <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery-1.11.0.min.js"></script> 
+        <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery.plugin.min.js"></script>
+        <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/js/jquery.datepick.js"></script>
+        <link rel="stylesheet" href="../../wdelo30/js/jqGrid/css/flora.datepick.css"> 
+        <script type="text/javascript" src="../../wdelo30/js/jqGrid/js/jquery.datepick-ru.js"></script>
+
+        <!-- This is the Javascript file of jqGrid -->   
+        <script type="text/ecmascript" src="../../wdelo30/js/jqGrid/src/jquery.jqGrid.js"></script>
+        <!-- This is the localization file of the grid controlling messages, labels, etc.
+        We support more than 40 localizations -->
+
+        <script type="text/javascript" language="javascript" src="../../wdelo30/js/jqGrid/js/i18n/grid.locale-ru1.js"></script>	
+        <script type="text/javascript" language="javascript" src="//cdnjs.cloudflare.com/ajax/libs/jszip/2.5.0/jszip.min.js"></script>  
+        <!-- The link to the CSS that the grid needs -->
+        <link rel="stylesheet" type="text/css" media="screen" href="../../wdelo30/js/jqGrid/css/ui.jqgrid.css" />	
+        <!-- A link to a jQuery UI ThemeRoller theme, more than 22 built-in and many more custom -->
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/css/bootstrap.min.css"> 
+        <!-- The link to the CSS that the grid needs -->
+        <link rel="stylesheet" type="text/css" media="screen" href="../../wdelo30/js/jqGrid/css/ui.jqgrid-bootstrap.css" />
+        <script>
+            $.jgrid.defaults.width = 780;
+            $.jgrid.defaults.styleUI = 'Bootstrap';
+        </script>
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.4/js/bootstrap.min.js"></script>
+
+
+
+
+        <meta charset="utf-8" />
+
+        <title>Лиды</title>
+    </head>
+    <body>
+        <table>
+            <tr>
+                <td>Период: </td>
+                <td> С: <input type="text" id="date1" /></td>
+                <td> По: <input type="text" id="date2" /></td>
+            </tr>
+            <tr>
+                <td>
+                    <select class="form-control input-sm input-delopro" id="MODE" name="MODE" style="width:130px" onchange="f_update()">
+                        <option value="MINE">Только мои</option>
+                        <option value="TEAM">Мои и команды</option>
+                    </select>
+                </td>
+                <!-- R.Y. #22698 Добавил режим колл-центра -->
+                <td>
+                    <select class="form-control input-sm input-delopro" id="VIEWSIDE" name="VIEWSIDE" style="width:130px" onchange="f_update()">
+                        <option value="MANAGER">Менеджеры и директора</option>
+                        <option value="ECSPECIALIST">Колл-центр</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="form-control input-sm input-delopro" id="STATUSES" name="STATUSES" style="width:130px" onchange="f_update()">
+                        <option value="ACTUAL">В работе</option>
+                        <option value="ALL">Все</option>
+                    </select>
+                </td>
+            </tr>
+            <tr>
+                <td> <button onclick=f_update();  id = "UPDATE" type="button">Обновить </button></td>
+
+            </tr>
+        </table>
+        <div>
+            <table id="jqGrid"></table>
+            <div id="jqGridPager"></div>    
+
+        </div>
+        <div>
+            Примечание: Если вам нужно в режиме "Мои и команды" видеть лиды определенного человека, напишите на help@euroizol.com запрос на добавление вам такого-то пользователя как <b>члена команды</b>
+        </div>
+<!--
+<style>
+#gview_jqGrid th.ui-th-column {
+    background-color: 	#AFEEEE;
+    background-image: none
+}
+
+</style>
+-->
+        <script type="text/javascript">
+		
+		
+            $(function () {
+                var currentTime = new Date();
+// First Date Of the month 
+                var startDateFrom = new Date(currentTime.getFullYear(), currentTime.getMonth(), 1);
+// Last Date Of the Month 
+//                var startDateTo = new Date(currentTime.getFullYear(), currentTime.getMonth() + 1, 0);
+
+                $('#date1').datepick({
+                    defaultDate: 'm', selectDefaultDate: true, showTrigger: '#calImg'});
+                $('#date2').datepick({
+                    defaultDate: 'today', selectDefaultDate: true, showTrigger: '#calImg'});
+                $('#date1').datepick('setDate', startDateFrom);
+
+            });
+/*
+            $("#UPDATE").change(
+                    function ()
+                    {
+                        mes_gh();
+                    }
+            );
+*/
+        </script>
+
+        <script type="text/javascript">
+
+            function getFilters() {
+                var str;
+
+                str = 'DATE1=' + $('#date1')[0].value + '&DATE2=' +
+                        $('#date2')[0].value;
+
+                var e = document.getElementById("MODE");
+                str += '&MODE=' + e.options[e.selectedIndex].value;
+
+                var e3 = document.getElementById("VIEWSIDE");
+                str += '&VIEWSIDE=' + e3.options[e3.selectedIndex].value;
+
+                var e2 = document.getElementById("STATUSES");
+                str += '&STATUSES=' + e2.options[e2.selectedIndex].value;
+
+                return str;
+            }
+
+
+            var ei_w = $(window).width() - 5;
+            var ei_h = $(window).height()/3;
+
+            $(document).ready(function () {
+                $.jgrid.styleUI.Bootstrap.base.rowTable = "table table-bordered table-striped";
+
+                function linkedID(cellValue, options, rowObject, tp){
+                    if (tp) {
+                        let link;
+                        link = "<a href='../organizer/lead.php?EDITID=" + cellValue + " ' target='_blank'>" + cellValue + '</a>';
+                        return link;
+                    } else {
+                        return cellValue;
+                    }
+                }
+
+                $("#jqGrid").jqGrid({
+                    //url: ((window.location.protocol) + '//dp.euroizol.com/wdelo30/organizer/ec_peregovorlist.php'),// + getFilters()),
+                    url: ('../organizer/ec_peregovorlist.php?' + getFilters()),
+                    datatype: "json",
+                    colModel: [
+                        {
+                            label: 'ID',
+                            name: 'ID',
+                            width: 50,
+                            formatter: linkedID,
+                            sorttype: 'int'
+                        },
+                        {
+                            label: 'Дата',
+                            name: 'CREATEDATE',
+                            width: 50,
+                            sorttype: 'date'
+                        },
+                        {
+                            label: 'Контактное лицо',
+                            name: 'FIO',
+                            width: 100,
+
+                            sorttype: 'text'
+                        },
+                        {
+                            label: 'Организация',
+                            name: 'SOKRASH',
+                            width: 80,
+                            sorttype: 'text'
+
+                        },
+                        {
+                            label: 'Телефон',
+                            name: 'TEL',
+                            width: 50,
+                            sorttype: 'int'
+                        },
+                        {
+                            label: 'Статус лида',
+                            name: 'PERSTATUSNAZ',
+                            width: 40,
+                            sorttype: 'text'
+
+                        },
+                        {
+                            label: 'Направление',
+                            name: 'NAPR',
+                            width: 65,
+                            sorttype: 'text'
+                        },
+                        {
+                            label: 'Менеджер',
+                            name: 'MAN',
+                            width: 80,
+                            sorttype: 'int'
+
+                        },
+                        {
+                            label: 'Руководитель1',
+                            name: 'DIR1',
+                            width: 50,
+                            sorttype: 'text'
+                        },
+                        {
+                            label: 'Руководитель2',
+                            name: 'DIR2',
+                            width: 80,
+                            sorttype: 'text'
+
+                        },
+                        {
+                            label: 'Оператор',
+                            name: 'USR',
+                            width: 80,
+                            sorttype: 'text'
+
+                        },
+                        // R.Y. #22727 Тип лида
+                        {
+                            label: 'Тип',
+                            name: 'LEADTYPENAME',
+                            width: 80,
+                            sorttype: 'text'
+
+                        }
+                    ],
+
+                    loadonce: true,
+                    footerrow: false,                    
+                    colMenu: true,
+                    multiSort: false,
+                    hoverrows: true,
+                    userDataOnFooter: false, // use the userData parameter of the JSON response to display data on footer
+                    width: (ei_w - 5),
+                    height: (ei_h - 5),
+                    caption: "<b>Лиды</b>",
+                    viewrecords: true, // show the current page, data rang and total records on the toolbar
+                    pager: "#jqGridPager",
+                    rowNum: 1500
+                });
+
+
+                $('#jqGrid').navGrid('#jqGridPager',
+                        {
+                            edit: false,
+                            add: false,
+                            del: false,
+                            search: false,
+                            refresh: true,
+                            view: false,
+                            position: "left",
+                            cloneToTop: false});
+
+                // add first custom button
+                $('#jqGrid').navButtonAdd('#jqGridPager',
+                        {
+                            title: "Export to Excel",
+                            caption: "Выгрузить в  Excel",
+                            position: "last",
+                            maxlength: 200,
+                            onClickButton: exportxls
+                        });
+
+                function exportxls() {
+                    $("#jqGrid").jqGrid("exportToExcel", {
+                        includeLabels: true,
+                        includeGroupHeader: false,
+                        includeFooter: true,
+                        fileName: "ec_peregovorlist.xlsx",
+                        maxlength: 40 // maxlength for visible string data 
+                    });
+                }
+				
+
+                $('#jqGrid').jqGrid('filterToolbar', {
+                    // JSON stringify all data from search, including search toolbar operators
+                    stringResult: true,
+                    // instuct the grid toolbar to show the search options
+                    searchOperators: true
+                });
+				$(".ui-jqgrid-sortable").css('white-space', 'normal').css('height', 'auto');
+            });
+
+            function f_update()
+            {
+                $("#jqGrid").jqGrid('clearGridData');  // Очищаем данные
+                //$("#jqGrid").jqGrid('groupingGroupBy', "FILIAL_NAZ");//Если есть группировки то нужно так иначе беда
+
+                $("#jqGrid").
+                setGridParam(
+                    {
+
+                        // mtype: "GET",
+                        datatype: "json",
+                        url: ('../organizer/ec_peregovorlist.php?' + getFilters()),
+                    }).trigger("reloadGrid", [{ loadonce: true,page: 1}]);
+            }
+
+        </script>
+
+
+    </body>
+</html>
